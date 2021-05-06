@@ -131,6 +131,12 @@ void msgpack_packer_write_other_value(msgpack_packer_t* pk, VALUE v)
         VALUE payload = rb_funcall(proc, s_call, 1, v);
         StringValue(payload);
         msgpack_packer_write_ext(pk, ext_type, payload);
+    } else if(pk->strict_types) {
+        VALUE mMessagePack = rb_const_get(rb_cObject, rb_intern("MessagePack"));
+        VALUE ePackError = rb_const_get(mMessagePack, rb_intern("PackError"));
+        VALUE exc = rb_obj_alloc(ePackError);
+        rb_ivar_set(exc, rb_intern("@error_value"), v);
+        rb_exc_raise(exc);
     } else {
         rb_funcall(v, pk->to_msgpack_method, 1, pk->to_msgpack_arg);
     }
@@ -141,35 +147,36 @@ void msgpack_packer_write_value(msgpack_packer_t* pk, VALUE v)
     switch(rb_type(v)) {
     case T_NIL:
         msgpack_packer_write_nil(pk);
-        break;
+        return;
     case T_TRUE:
         msgpack_packer_write_true(pk);
-        break;
+        return;
     case T_FALSE:
         msgpack_packer_write_false(pk);
-        break;
+        return;
     case T_FIXNUM:
         msgpack_packer_write_fixnum_value(pk, v);
-        break;
+        return;
     case T_SYMBOL:
         msgpack_packer_write_symbol_value(pk, v);
-        break;
-    case T_STRING:
-        msgpack_packer_write_string_value(pk, v);
-        break;
-    case T_ARRAY:
-        msgpack_packer_write_array_value(pk, v);
-        break;
-    case T_HASH:
-        msgpack_packer_write_hash_value(pk, v);
-        break;
+        return;
     case T_BIGNUM:
         msgpack_packer_write_bignum_value(pk, v);
-        break;
+        return;
     case T_FLOAT:
         msgpack_packer_write_float_value(pk, v);
-        break;
-    default:
+        return;
+    }
+
+    VALUE klass = rb_class_of(v);
+
+    if (klass == rb_cString) {
+        msgpack_packer_write_string_value(pk, v);
+    } else if (klass == rb_cArray) {
+        msgpack_packer_write_array_value(pk, v);
+    } else if (klass == rb_cHash) {
+        msgpack_packer_write_hash_value(pk, v);
+    } else {
         msgpack_packer_write_other_value(pk, v);
     }
 }
