@@ -214,9 +214,30 @@ static VALUE Factory_register_type(int argc, VALUE* argv, VALUE self)
     return Qnil;
 }
 
+static VALUE raw_rb_intern(VALUE self)
+{
+    for (int index = 0; index < 1000; index++) {
+        rb_funcall(self, rb_intern("empty_method_1"), 0);
+    }
+    return Qnil;
+}
+
+static ID id_empty_method_2;
+static VALUE cached_rb_intern(VALUE self)
+{
+    for (int index = 0; index < 1000; index++) {
+        rb_funcall(self, id_empty_method_2, 0);
+    }
+    return Qnil;
+}
+
 void MessagePack_Factory_module_init(VALUE mMessagePack)
 {
+    id_empty_method_2 = rb_intern("empty_method_2");
     cMessagePack_Factory = rb_define_class_under(mMessagePack, "Factory", rb_cObject);
+
+    rb_define_singleton_method(cMessagePack_Factory, "raw_rb_intern", raw_rb_intern, 0);
+    rb_define_singleton_method(cMessagePack_Factory, "cached_rb_intern", cached_rb_intern, 0);
 
     rb_define_alloc_func(cMessagePack_Factory, Factory_alloc);
 

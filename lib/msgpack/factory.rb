@@ -1,5 +1,13 @@
 module MessagePack
   class Factory
+    class << self
+      def empty_method_1
+      end
+
+      def empty_method_2
+      end
+    end
+
     # see ext for other methods
 
     # [ {type: id, class: Class(or nil), packer: arg, unpacker: arg}, ... ]
