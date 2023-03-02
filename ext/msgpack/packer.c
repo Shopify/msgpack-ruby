@@ -150,6 +150,9 @@ bool msgpack_packer_try_write_with_ext_type_lookup(msgpack_packer_t* pk, VALUE v
 void msgpack_packer_write_other_value(msgpack_packer_t* pk, VALUE v)
 {
     if(!(msgpack_packer_try_write_with_ext_type_lookup(pk, v))) {
+        printf("--- fallback\n");
+        rb_p(pk->ext_registry.hash);
+        rb_p(pk->ext_registry.cache);
         rb_funcall(v, pk->to_msgpack_method, 1, pk->to_msgpack_arg);
     }
 }
