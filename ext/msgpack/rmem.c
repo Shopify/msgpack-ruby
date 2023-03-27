@@ -71,7 +71,9 @@ void* _msgpack_rmem_alloc2(msgpack_rmem_t* pm)
     *c = tmp;
 
     pm->head.mask = 0xffffffff & (~1);  /* "& (~1)" means first chunk is already allocated */
-    pm->head.pages = xmalloc(MSGPACK_RMEM_PAGE_SIZE * 32);
+    void *ptr = xmalloc(MSGPACK_RMEM_PAGE_SIZE * 32);
+    rb_gc_start(); // try to simulate crash
+    pm->head.pages = ptr;
 
     return pm->head.pages;
 }

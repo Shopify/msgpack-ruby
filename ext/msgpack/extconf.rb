@@ -8,7 +8,7 @@ have_func("rb_hash_new_capa", "ruby.h") # Ruby 3.2+
 $CFLAGS << " -fvisibility=hidden "
 
 unless RUBY_PLATFORM.include? 'mswin'
-  $CFLAGS << %[ -I.. -Wall -O3 #{RbConfig::CONFIG["debugflags"]} -std=gnu99]
+  $CFLAGS << %[ -I.. -Wall -O0 #{RbConfig::CONFIG["debugflags"]} -std=gnu99]
 end
 
 if RUBY_VERSION.start_with?('3.0.') && RUBY_VERSION <= '3.0.5'
