@@ -6,7 +6,7 @@
 
 * Fix `Buffer#clear` to properly reset memory chunks before adding them back to the pool.
   This could have caused data to leak across buffers when using the MessagePack::Buffer API
-  directly. [CVE-PENDING].
+  directly. [CVE-2026-54522].
 
 2026-05-28 1.8.1
 
