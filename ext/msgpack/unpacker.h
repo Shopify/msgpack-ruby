@@ -77,16 +77,6 @@ struct msgpack_unpacker_t {
 
 #define UNPACKER_BUFFER_(uk) (&(uk)->buffer)
 
-enum msgpack_unpacker_object_type {
-    TYPE_NIL = 0,
-    TYPE_BOOLEAN,
-    TYPE_INTEGER,
-    TYPE_FLOAT,
-    TYPE_RAW,
-    TYPE_ARRAY,
-    TYPE_MAP,
-};
-
 void msgpack_unpacker_static_init(void);
 
 void msgpack_unpacker_static_destroy(void);
@@ -138,9 +128,6 @@ static inline VALUE msgpack_unpacker_get_last_object(msgpack_unpacker_t* uk)
 {
     return uk->last_object;
 }
-
-
-int msgpack_unpacker_peek_next_object_type(msgpack_unpacker_t* uk);
 
 int msgpack_unpacker_skip_nil(msgpack_unpacker_t* uk);
 
