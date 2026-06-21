@@ -133,7 +133,7 @@ module MessagePack
       # If it could not serialize the object, it raises
       # NoMethodError: undefined method `to_msgpack' for #<the_object>.
       #
-      # @param obj [Object] object to serialize
+      # @param object [Object] object to serialize
       # @return [String] serialized object
       #
       def dump(object)
@@ -145,7 +145,7 @@ module MessagePack
       # The unpacker should no longer be held after the block has returned.
       #
       # @yieldparam unpacker [MessagePack::Unpacker]
-      # @returns [Object] the block return value
+      # @return [Object] the block return value
       #
       def unpacker(&block)
       end
@@ -156,7 +156,7 @@ module MessagePack
       # The packer should no longer be held after the block has returned.
       #
       # @yieldparam packer [MessagePack::Packer]
-      # @returns [Object] the block return value
+      # @return [Object] the block return value
       #
       def packer(&block)
       end
