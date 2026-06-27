@@ -211,7 +211,7 @@ static inline int object_complete(msgpack_unpacker_t* uk, VALUE object)
     return PRIMITIVE_OBJECT_COMPLETE;
 }
 
-static inline int object_complete_symbol(msgpack_unpacker_t* uk, VALUE object)
+static inline int object_complete_frozen(msgpack_unpacker_t* uk, VALUE object)
 {
     uk->last_object = object;
     reset_head_byte(uk);
@@ -222,9 +222,9 @@ static inline int object_complete_ext(msgpack_unpacker_t* uk, int ext_type, VALU
 {
     if (uk->optimized_symbol_ext_type && ext_type == uk->symbol_ext_type) {
         if (RB_UNLIKELY(NIL_P(str))) { // empty extension is returned as Qnil
-            return object_complete_symbol(uk, ID2SYM(rb_intern3("", 0, rb_utf8_encoding())));
+            return object_complete_frozen(uk, ID2SYM(rb_intern3("", 0, rb_utf8_encoding())));
         }
-        return object_complete_symbol(uk, rb_str_intern(str));
+        return object_complete_frozen(uk, rb_str_intern(str));
     }
 
     int ext_flags;
@@ -398,7 +398,7 @@ static inline int read_raw_body_begin(msgpack_unpacker_t* uk, int raw_type)
         int ret;
         if ((uk->optimized_symbol_ext_type && uk->symbol_ext_type == raw_type)) {
             VALUE symbol = msgpack_buffer_read_top_as_symbol(UNPACKER_BUFFER_(uk), length, raw_type != RAW_TYPE_BINARY);
-            ret = object_complete_symbol(uk, symbol);
+            ret = object_complete_frozen(uk, symbol);
         } else if (is_reading_map_key(uk) && raw_type == RAW_TYPE_STRING) {
            /* don't use zerocopy for hash keys but get a frozen string directly
             * because rb_hash_aset freezes keys and it causes copying */
@@ -409,7 +409,7 @@ static inline int read_raw_body_begin(msgpack_unpacker_t* uk, int raw_type)
                 } else {
                     key = msgpack_buffer_read_top_as_symbol(UNPACKER_BUFFER_(uk), length, true);
                 }
-                ret = object_complete_symbol(uk, key);
+                ret = object_complete_frozen(uk, key);
             } else {
                 if (uk->use_key_cache) {
                     key = msgpack_buffer_read_top_as_interned_string(UNPACKER_BUFFER_(uk), &uk->key_cache, length);
