@@ -450,10 +450,10 @@ static int read_primitive(msgpack_unpacker_t* uk)
 
     SWITCH_RANGE_BEGIN(b)
     SWITCH_RANGE(b, 0x00, 0x7f)  // Positive Fixnum
-        return object_complete(uk, INT2NUM(b));
+        return object_complete_frozen(uk, INT2NUM(b));
 
     SWITCH_RANGE(b, 0xe0, 0xff)  // Negative Fixnum
-        return object_complete(uk, INT2NUM((int8_t)b));
+        return object_complete_frozen(uk, INT2NUM((int8_t)b));
 
     SWITCH_RANGE(b, 0xa0, 0xbf)  // FixRaw / fixstr
         size_t count = b & 0x1f;
@@ -478,15 +478,15 @@ static int read_primitive(msgpack_unpacker_t* uk)
     SWITCH_RANGE(b, 0xc0, 0xdf)  // Variable
         switch(b) {
         case 0xc0:  // nil
-            return object_complete(uk, Qnil);
+            return object_complete_frozen(uk, Qnil);
 
         //case 0xc1:  // string
 
         case 0xc2:  // false
-            return object_complete(uk, Qfalse);
+            return object_complete_frozen(uk, Qfalse);
 
         case 0xc3:  // true
-            return object_complete(uk, Qtrue);
+            return object_complete_frozen(uk, Qtrue);
 
         case 0xc7: // ext 8
             {
@@ -542,14 +542,14 @@ static int read_primitive(msgpack_unpacker_t* uk)
             {
                 READ_CAST_BLOCK_OR_RETURN_EOF(cb, uk, 1);
                 uint8_t u8 = cb.u8;
-                return object_complete(uk, INT2NUM((int)u8));
+                return object_complete_frozen(uk, INT2NUM((int)u8));
             }
 
         case 0xcd:  // unsigned int 16
             {
                 READ_CAST_BLOCK_OR_RETURN_EOF(cb, uk, 2);
                 uint16_t u16 = _msgpack_be16(cb.u16);
-                return object_complete(uk, INT2NUM((int)u16));
+                return object_complete_frozen(uk, INT2NUM((int)u16));
             }
 
         case 0xce:  // unsigned int 32
@@ -570,14 +570,14 @@ static int read_primitive(msgpack_unpacker_t* uk)
             {
                 READ_CAST_BLOCK_OR_RETURN_EOF(cb, uk, 1);
                 int8_t i8 = cb.i8;
-                return object_complete(uk, INT2NUM((int)i8));
+                return object_complete_frozen(uk, INT2NUM((int)i8));
             }
 
         case 0xd1:  // signed int 16
             {
                 READ_CAST_BLOCK_OR_RETURN_EOF(cb, uk, 2);
                 int16_t i16 = _msgpack_be16(cb.i16);
-                return object_complete(uk, INT2NUM((int)i16));
+                return object_complete_frozen(uk, INT2NUM((int)i16));
             }
 
         case 0xd2:  // signed int 32
