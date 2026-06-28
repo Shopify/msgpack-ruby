@@ -29,13 +29,4 @@ Gem::Specification.new do |s|
     "documentation_uri" => "https://github.com/msgpack/msgpack/blob/master/spec.md",
     "source_code_uri" => "https://github.com/msgpack/msgpack-ruby"
   }
-
-  s.add_development_dependency 'bundler'
-  s.add_development_dependency 'rake'
-  s.add_development_dependency 'rake-compiler', ['>= 1.1.9']
-  s.add_development_dependency 'rspec', ['~> 3.3']
-  s.add_development_dependency 'ruby_memcheck'
-  s.add_development_dependency 'yard'
-  s.add_development_dependency 'json'
-  s.add_development_dependency 'benchmark-ips', ['~> 2.10.0']
 end
