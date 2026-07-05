@@ -25,11 +25,6 @@
 #define MSGPACK_PACKER_IO_FLUSH_THRESHOLD_TO_WRITE_STRING_BODY (1024)
 #endif
 
-#ifndef UNREACHABLE_RETURN
-// Ruby 2.5
-#define UNREACHABLE_RETURN() return
-#endif
-
 struct msgpack_packer_t;
 typedef struct msgpack_packer_t msgpack_packer_t;
 
@@ -418,7 +413,6 @@ static inline void msgpack_packer_write_string_value(msgpack_packer_t* pk, VALUE
 
     if(RB_UNLIKELY(len > 0xffffffffL)) {
         rb_raise(rb_eArgError, "size of string is too long to pack: %lu bytes should be <= %ld", len, 0xffffffffL);
-        UNREACHABLE_RETURN();
     }
 
     if (RB_UNLIKELY(pk->compatibility_mode)) {
