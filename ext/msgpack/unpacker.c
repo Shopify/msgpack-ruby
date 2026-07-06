@@ -378,7 +378,14 @@ static inline int read_raw_body_begin(msgpack_unpacker_t* uk, int raw_type)
             reset_head_byte(uk);
             uk->reading_raw_remaining = 0;
 
-            _msgpack_unpacker_stack_push(uk, STACK_TYPE_RECURSIVE, 1, Qnil);
+            if(_msgpack_unpacker_stack_push(uk, STACK_TYPE_RECURSIVE, 1, Qnil) < 0) {
+                /* Recursive extensions re-enter msgpack_unpacker_read() through the
+                 * user proc, consuming a full C stack frame per nesting level. If we
+                 * ignore a failed push (stack already at MSGPACK_UNPACKER_STACK_CAPACITY)
+                 * the recursion continues unbounded and exhausts the C stack (SIGSEGV)
+                 * instead of raising StackError like every other container type. */
+                return PRIMITIVE_STACK_TOO_DEEP;
+            }
             int raised;
             obj = protected_proc_call(proc, 1, &uk->self, &raised);
             msgpack_unpacker_stack_pop(uk);

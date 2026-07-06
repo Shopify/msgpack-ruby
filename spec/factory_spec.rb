@@ -661,6 +661,23 @@ describe MessagePack::Factory do
         GC.stress = false
       end
     end
+
+    it 'raises StackError instead of crashing on deeply nested recursive extensions' do
+      recursive_type = Struct.new(:payload)
+      factory = MessagePack::Factory.new
+      factory.register_type(0x01,
+        recursive_type,
+        packer: ->(obj, packer) { packer.write(obj.payload) },
+        unpacker: ->(unpacker) { recursive_type.new(unpacker.read) },
+        recursive: true,
+      )
+
+      obj = 42
+      1000.times { obj = recursive_type.new(obj) }
+      payload = factory.dump(obj)
+
+      expect { factory.load(payload) }.to raise_error(MessagePack::StackError)
+    end
   end
 
   describe 'memsize' do
