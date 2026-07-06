@@ -661,6 +661,44 @@ describe MessagePack::Factory do
         GC.stress = false
       end
     end
+
+    it 'raises StackError instead of crashing on deeply nested recursive extensions' do
+      # The C extension caps nesting at MSGPACK_UNPACKER_STACK_CAPACITY and raises
+      # MessagePack::StackError. The Java (JRuby) decoder has no such guard and
+      # recurses until the JVM stack overflows, so this behavior is CRuby-specific.
+      skip if IS_JRUBY
+
+      recursive_type = Struct.new(:payload)
+      factory = MessagePack::Factory.new
+      factory.register_type(0x01,
+        recursive_type,
+        packer: ->(obj, packer) { packer.write(obj.payload) },
+        unpacker: ->(unpacker) { recursive_type.new(unpacker.read) },
+        recursive: true,
+      )
+
+      # Build the nested type 0x01 extension payload from the inside out so the
+      # construction itself uses no deep recursion (packing 200+ levels would
+      # overflow the C stack on platforms with a small stack, e.g. Windows).
+      wrap_ext = ->(payload) do
+        len = payload.bytesize
+        header =
+          if len == 1 then [0xd4, 0x01].pack("CC")
+          elsif len <= 0xff then [0xc7, len, 0x01].pack("CCC")
+          elsif len <= 0xffff then [0xc8, len, 0x01].pack("CnC")
+          else [0xc9, len, 0x01].pack("CNC")
+          end
+        (header + payload).b
+      end
+
+      payload = "\x2a".b # a single MessagePack integer (42)
+      200.times { payload = wrap_ext.call(payload) } # deeper than the 128 stack cap
+
+      # Before the fix, read_raw_body_begin ignored a failed stack push for
+      # recursive extensions, so nesting past MSGPACK_UNPACKER_STACK_CAPACITY
+      # recursed unbounded in C and crashed the VM (SIGSEGV) rather than raising.
+      expect { factory.load(payload) }.to raise_error(MessagePack::StackError)
+    end
   end
 
   describe 'memsize' do
