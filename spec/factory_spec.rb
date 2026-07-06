@@ -663,6 +663,11 @@ describe MessagePack::Factory do
     end
 
     it 'raises StackError instead of crashing on deeply nested recursive extensions' do
+      # The C extension caps nesting at MSGPACK_UNPACKER_STACK_CAPACITY and raises
+      # MessagePack::StackError. The Java (JRuby) decoder has no such guard and
+      # recurses until the JVM stack overflows, so this behavior is CRuby-specific.
+      skip if IS_JRUBY
+
       recursive_type = Struct.new(:payload)
       factory = MessagePack::Factory.new
       factory.register_type(0x01,
