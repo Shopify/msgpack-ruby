@@ -677,10 +677,26 @@ describe MessagePack::Factory do
         recursive: true,
       )
 
-      obj = 42
-      1000.times { obj = recursive_type.new(obj) }
-      payload = factory.dump(obj)
+      # Build the nested type 0x01 extension payload from the inside out so the
+      # construction itself uses no deep recursion (packing 200+ levels would
+      # overflow the C stack on platforms with a small stack, e.g. Windows).
+      wrap_ext = ->(payload) do
+        len = payload.bytesize
+        header =
+          if len == 1 then [0xd4, 0x01].pack("CC")
+          elsif len <= 0xff then [0xc7, len, 0x01].pack("CCC")
+          elsif len <= 0xffff then [0xc8, len, 0x01].pack("CnC")
+          else [0xc9, len, 0x01].pack("CNC")
+          end
+        (header + payload).b
+      end
 
+      payload = "\x2a".b # a single MessagePack integer (42)
+      200.times { payload = wrap_ext.call(payload) } # deeper than the 128 stack cap
+
+      # Before the fix, read_raw_body_begin ignored a failed stack push for
+      # recursive extensions, so nesting past MSGPACK_UNPACKER_STACK_CAPACITY
+      # recursed unbounded in C and crashed the VM (SIGSEGV) rather than raising.
       expect { factory.load(payload) }.to raise_error(MessagePack::StackError)
     end
   end
