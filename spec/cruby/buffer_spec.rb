@@ -620,4 +620,49 @@ describe Buffer do
 
     expect(b1.read_all).to eq(('C' * 128).b)
   end
+
+  it "keeps an rmem page alive while a later chunk still points into it" do
+    threshold = 1024
+    long = 'L' * (threshold * 2)
+
+    b1 = MessagePack::Buffer.new(nil, write_reference_threshold: threshold)
+    b1.write('a' * 100)  # first rmem page
+    b1.write(long)       # written by reference
+    b1.write('b' * 10)   # second rmem page, left mostly unused
+    b1.write(long)       # reclaims the unused part of that page
+    b1.write('c' * 50)   # carved out of the reclaimed part
+    b1.read(100 + long.bytesize + 10 + long.bytesize)
+
+    # the pool must not hand that page to anyone else while b1 still reads from it
+    others = 6.times.map do |i|
+      b = MessagePack::Buffer.new
+      b.write(('A'.ord + i).chr * 4000)
+      b
+    end
+
+    expect(b1.read_all).to eq(('c' * 50).b)
+    expect(others.size).to eq(6)
+  end
+
+  it "does not carve a new chunk out of an rmem page it already released" do
+    threshold = 1024
+    long = 'L' * (threshold * 2)
+
+    b1 = MessagePack::Buffer.new(nil, write_reference_threshold: threshold)
+    b1.write('a' * 100)
+    b1.write(long)
+    b1.write('b' * 10)
+    b1.write(long)                     # reclaims the unused part of the page
+    b1.read(100 + long.bytesize + 10)  # releases that very page
+    b1.write('d' * 50)                 # must not be carved out of it
+
+    others = 6.times.map do |i|
+      b = MessagePack::Buffer.new
+      b.write(('a'.ord + i).chr * 4000)
+      b
+    end
+
+    expect(b1.read_all).to eq((long + ('d' * 50)).b)
+    expect(others.size).to eq(6)
+  end
 end
