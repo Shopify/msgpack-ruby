@@ -1,3 +1,9 @@
+2026-07-28 1.8.4
+
+* Fix `MessagePack::Buffer` to stop using already released memory page.
+  This could have caused data to leak across buffers when using the MessagePack::Buffer API
+  directly.
+
 2026-06-10 1.8.3
 
 * Fix an integer overflow when parsing maps.
