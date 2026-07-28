@@ -127,6 +127,15 @@ void msgpack_buffer_mark(void *ptr)
 
 bool _msgpack_buffer_shift_chunk(msgpack_buffer_t* b)
 {
+    if(b->rmem_owner == &b->head->mem) {
+        /* the chunk that owns the rmem page is going away and takes the page
+         * with it. don't carve the remaining space out of a page that is
+         * already back in the pool. */
+        b->rmem_end = NULL;
+        b->rmem_last = NULL;
+        b->rmem_owner = NULL;
+    }
+
     _msgpack_buffer_chunk_destroy(b->head);
 
     if(b->head == &b->tail) {
@@ -264,6 +273,18 @@ static inline msgpack_buffer_chunk_t* _msgpack_buffer_alloc_new_chunk(msgpack_bu
     return chunk;
 }
 
+/* b->tail is copied into nc and then rebuilt, so the rmem page pointer moves
+ * to nc. the owner has to follow it: if it kept pointing at b->tail.mem, the
+ * transfer in _msgpack_buffer_chunk_malloc would degenerate into a
+ * self-assignment and the page would be released by nc while the rebuilt tail
+ * is still reading from it. */
+static inline void _msgpack_buffer_transfer_rmem_owner(msgpack_buffer_t* b, msgpack_buffer_chunk_t* nc)
+{
+    if(b->rmem_owner == &b->tail.mem) {
+        b->rmem_owner = &nc->mem;
+    }
+}
+
 static inline void _msgpack_buffer_add_new_chunk(msgpack_buffer_t* b)
 {
     if(b->head == &b->tail) {
@@ -275,6 +296,7 @@ static inline void _msgpack_buffer_add_new_chunk(msgpack_buffer_t* b)
         msgpack_buffer_chunk_t* nc = _msgpack_buffer_alloc_new_chunk(b);
 
         *nc = b->tail;
+        _msgpack_buffer_transfer_rmem_owner(b, nc);
         b->head = nc;
         nc->next = &b->tail;
 
@@ -295,6 +317,7 @@ static inline void _msgpack_buffer_add_new_chunk(msgpack_buffer_t* b)
 
         /* rebuild tail */
         *nc = b->tail;
+        _msgpack_buffer_transfer_rmem_owner(b, nc);
         before_tail->next = nc;
         nc->next = &b->tail;
     }
