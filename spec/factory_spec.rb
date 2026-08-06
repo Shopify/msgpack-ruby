@@ -512,10 +512,10 @@ describe MessagePack::Factory do
       before do
         skip if IS_JRUBY # JRuby implementation doesn't support the optimized symbols unpacker for now
         subject.register_type(
-          0x00,
+          0x01,
           ::Symbol,
           packer: :to_msgpack_ext,
-          unpacker: :from_msgpack_ext,
+          unpacker: ->(_) { raise "symbol unpacking not optimized" },
           optimized_symbols_parsing: true,
         )
       end

@@ -121,7 +121,10 @@ static VALUE Factory_dup(VALUE self)
     msgpack_factory_t *fc = Factory_get(self);
     msgpack_factory_t *cloned_fc = Factory_get(clone);
 
+    cloned_fc->has_bigint_ext_type = fc->has_bigint_ext_type;
     cloned_fc->has_symbol_ext_type = fc->has_symbol_ext_type;
+    cloned_fc->optimized_symbol_ext_type = fc->optimized_symbol_ext_type;
+    cloned_fc->symbol_ext_type = fc->symbol_ext_type;
     cloned_fc->pkrg = fc->pkrg;
     msgpack_unpacker_ext_registry_borrow(fc->ukrg, &cloned_fc->ukrg);
     msgpack_packer_ext_registry_dup(clone, &fc->pkrg, &cloned_fc->pkrg);
@@ -230,6 +233,7 @@ static VALUE Factory_register_type_internal(VALUE self, VALUE rb_ext_type, VALUE
     }
 
     if(ext_module == rb_cSymbol) {
+        fc->symbol_ext_type = ext_type;
         if(NIL_P(options) || RTEST(rb_hash_aref(options, ID2SYM(rb_intern("packer"))))) {
             fc->has_symbol_ext_type = true;
         }
