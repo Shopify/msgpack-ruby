@@ -59,6 +59,7 @@ public class Factory extends RubyObject {
     Factory clone = (Factory)super.dup();
     clone.extensionRegistry = extensionRegistry();
     clone.hasSymbolExtType = hasSymbolExtType;
+    clone.hasBigIntExtType = hasBigIntExtType;
     return clone;
   }
 
