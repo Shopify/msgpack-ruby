@@ -81,7 +81,7 @@ const rb_data_type_t unpacker_data_type = {
         .dfree = Unpacker_free,
         .dsize = Unpacker_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 VALUE MessagePack_Unpacker_alloc(VALUE klass)

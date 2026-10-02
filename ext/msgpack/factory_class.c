@@ -75,7 +75,7 @@ static const rb_data_type_t factory_data_type = {
         .dfree = Factory_free,
         .dsize = Factory_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 #ifdef RUBY_TYPED_FROZEN_SHAREABLE
         /* Frozen factories don't change, so Ractor.make_shareable can share them between Ractors. */
         | RUBY_TYPED_FROZEN_SHAREABLE

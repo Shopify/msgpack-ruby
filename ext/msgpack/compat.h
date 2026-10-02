@@ -22,5 +22,15 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
+/* Ruby 4.1 can free objects of a type with RUBY_TYPED_THREAD_SAFE_FREE on any thread, in parallel with other frees and
+ * with Ruby code. Without it, Ruby puts off their frees while several Ractors run, until it stops all of them. Every
+ * msgpack type only frees memory its object owns, apart from the unpacker registry, which factories and unpackers
+ * release with an atomic borrow count. */
+#if defined(RUBY_TYPED_THREAD_SAFE_FREE) && defined(HAVE_RUBY_ATOMIC_H)
+#define MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_THREAD_SAFE_FREE
+#else
+#define MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE 0
+#endif
+
 #endif
 

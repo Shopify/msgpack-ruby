@@ -62,7 +62,7 @@ static const rb_data_type_t held_buffer_data_type = {
         .dfree = RUBY_TYPED_DEFAULT_FREE,
         .dsize = HeldBuffer_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 VALUE MessagePack_Buffer_hold(msgpack_buffer_t* buffer)
@@ -131,7 +131,7 @@ static const rb_data_type_t buffer_data_type = {
         .dfree = Buffer_free,
         .dsize = Buffer_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static const rb_data_type_t buffer_view_data_type = {
@@ -141,7 +141,7 @@ static const rb_data_type_t buffer_view_data_type = {
         .dfree = NULL,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static inline msgpack_buffer_t *MessagePack_Buffer_get(VALUE object)

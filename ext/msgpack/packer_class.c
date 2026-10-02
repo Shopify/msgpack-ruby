@@ -65,7 +65,7 @@ const rb_data_type_t packer_data_type = {
         .dfree = Packer_free,
         .dsize = Packer_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | MSGPACK_RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 
