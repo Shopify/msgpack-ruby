@@ -665,4 +665,43 @@ describe Buffer do
     expect(b1.read_all).to eq((long + ('d' * 50)).b)
     expect(others.size).to eq(6)
   end
+
+  it "keeps a message intact as it outgrows the small first chunk" do
+    sizes = [1, 100, 255, 256, 257, 3840, 4096, 4097, 10_000]
+    sizes.product(sizes).each do |first, second|
+      b = MessagePack::Buffer.new
+      b << 'a' * first
+      b << 'b' * second
+      expect(b.size).to eq(first + second)
+      expect(b.to_s).to eq(('a' * first + 'b' * second).b)
+
+      b = MessagePack::Buffer.new
+      b << 'a' * first
+      expect(b.read(first / 2)).to eq(('a' * (first / 2)).b)
+      b << 'b' * second
+      expect(b.read_all).to eq(('a' * (first - first / 2) + 'b' * second).b)
+
+      b << 'c' * second # the buffer is empty again, so this starts a small chunk if it fits
+      expect(b.read_all).to eq(('c' * second).b)
+    end
+  end
+
+  it "doesn't keep a page for a small message" do
+    payload = MessagePack.pack({ "id" => 1, "args" => [1, 2.5, "x" * 40, nil, true], "queue" => "default" })
+    GC.start
+    GC.disable
+    before = GC.stat(:malloc_increase_bytes)
+    kept = Array.new(1000) do
+      packer = MessagePack::Packer.new
+      packer.write_bin(payload).to_s
+      buffer = MessagePack::Buffer.new
+      buffer << payload
+      buffer.to_s
+      [packer, buffer]
+    end
+    # a page is 4 KiB, so each object kept one before
+    expect((GC.stat(:malloc_increase_bytes) - before) / (kept.size * 2)).to be < 1024
+  ensure
+    GC.enable
+  end
 end

@@ -617,3 +617,16 @@ describe MessagePack::Packer do
     packer.full_pack
   end
 end
+
+describe MessagePack::Packer do
+  it "packs messages of any size when it is reused after #clear" do
+    packer = MessagePack::Packer.new
+    [0, 1, 50, 84, 85, 86, 300, 10, 1500, 10, 5000, 0].each do |n|
+      object = Array.new(n) { |i| i * 3 }
+      packer.write(object)
+      expect(MessagePack.unpack(packer.to_s)).to eq(object)
+      packer.clear
+      expect(MessagePack.unpack(MessagePack.pack(object))).to eq(object)
+    end
+  end
+end

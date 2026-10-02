@@ -404,6 +404,29 @@ describe MessagePack::Factory do
         expect(factory.load(payload)).to be == point
       end
 
+      it 'keeps what the outer message wrote before the extension' do
+        factory = MessagePack::Factory.new
+        factory.register_type(
+          0x01,
+          Point,
+          packer: ->(point, packer) do
+            packer.write(point.to_a)
+            nil
+          end,
+          unpacker: ->(unpacker) { Point.new(*unpacker.read) },
+          recursive: true,
+        )
+
+        [10, 200, 300, 5000].product([10, 200, 300, 5000]).each do |before, inside|
+          object = ['a' * before, Point.new(1, 'b' * inside, 3), 'c' * 10]
+          expect(factory.load(factory.dump(object))).to be == object
+
+          packer = factory.packer
+          packer.write(object)
+          expect(factory.load(packer.to_s)).to be == object
+        end
+      end
+
       it 'can receive the packer as argument (Method)' do
         mod = Module.new
         mod.define_singleton_method(:packer) do |point, packer|

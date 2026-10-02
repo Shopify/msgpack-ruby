@@ -19,6 +19,10 @@
 #include "buffer.h"
 #include "rmem.h"
 
+#if MSGPACK_BUFFER_SMALL_CHUNK_SIZE >= MSGPACK_RMEM_PAGE_SIZE
+#error "MSGPACK_BUFFER_SMALL_CHUNK_SIZE must be smaller than MSGPACK_RMEM_PAGE_SIZE"
+#endif
+
 int msgpack_rb_encindex_utf8;
 int msgpack_rb_encindex_usascii;
 int msgpack_rb_encindex_ascii8bit;
@@ -364,6 +368,20 @@ static inline void* _msgpack_buffer_chunk_malloc(
         msgpack_buffer_t* b, msgpack_buffer_chunk_t* c,
         size_t required_size, size_t* allocated_size)
 {
+    if(c == b->head && b->io == Qnil && required_size <= MSGPACK_BUFFER_SMALL_CHUNK_SIZE) {
+        /* the first chunk of an empty buffer. most messages are small, and a
+         * page would stay allocated as long as the buffer holds the message,
+         * e.g. until a packer that #to_s was called on is garbage collected.
+         * _msgpack_buffer_expand grows the chunk into a page when the message
+         * outgrows it. with IO, chunks are what gets flushed, so they stay
+         * pages. */
+        *allocated_size = MSGPACK_BUFFER_SMALL_CHUNK_SIZE;
+        void* mem = xmalloc(MSGPACK_BUFFER_SMALL_CHUNK_SIZE);
+        c->mem = mem;
+        c->rmem = false;
+        return mem;
+    }
+
     if(required_size <= MSGPACK_RMEM_PAGE_SIZE) {
         c->rmem = true;
 
@@ -431,6 +449,41 @@ void _msgpack_buffer_expand(msgpack_buffer_t* b, const char* data, size_t length
                 memcpy(b->tail.last, data, length);
                 b->tail.last += tail_avail;
             }
+            return;
+        }
+    }
+
+    /* chunks that aren't pages are bigger than a page, except the small first
+     * chunk that _msgpack_buffer_chunk_malloc gives an empty buffer */
+    if(!b->tail.rmem && b->tail.mem != NULL &&
+            (size_t)(b->tail_buffer_end - b->tail.first) == MSGPACK_BUFFER_SMALL_CHUNK_SIZE) {
+        /* the message outgrew the small first chunk. while it fits a page, the
+         * chunk grows into one in place of adding another, so the message stays
+         * in one chunk as if it had started in a page. */
+        size_t tail_filled = b->tail.last - b->tail.first;
+        if(tail_filled + length <= MSGPACK_RMEM_PAGE_SIZE) {
+            /* the small chunk is the first chunk, so it is the head too */
+            size_t read_offset = b->read_buffer - b->tail.first;
+            char* mem = xrealloc(b->tail.mem, MSGPACK_RMEM_PAGE_SIZE);
+
+            /* it stays a malloc()ed chunk, not an rmem page, so nothing else
+             * carves memory out of it, and _msgpack_buffer_chunk_destroy frees
+             * it with xfree */
+            b->tail.mem = mem;
+
+            char* last = mem + tail_filled;
+            if(data != NULL) {
+                memcpy(last, data, length);
+                last += length;
+            }
+
+            /* consider read_buffer */
+            b->read_buffer = mem + read_offset;
+
+            /* rebuild tail chunk */
+            b->tail.first = mem;
+            b->tail.last = last;
+            b->tail_buffer_end = mem + MSGPACK_RMEM_PAGE_SIZE;
             return;
         }
     }

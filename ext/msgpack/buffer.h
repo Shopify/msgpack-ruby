@@ -47,6 +47,12 @@
 #define MSGPACK_BUFFER_IO_BUFFER_SIZE_MINIMUM (1024)
 #endif
 
+/* size of the first chunk of an empty buffer without IO, for a message that
+ * doesn't need a whole page */
+#ifndef MSGPACK_BUFFER_SMALL_CHUNK_SIZE
+#define MSGPACK_BUFFER_SMALL_CHUNK_SIZE (256)
+#endif
+
 #define NO_MAPPED_STRING ((VALUE)0)
 
 #ifndef RB_ENC_INTERNED_STR_NULL_CHECK
