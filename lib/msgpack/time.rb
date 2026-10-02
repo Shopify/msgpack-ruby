@@ -25,5 +25,11 @@ module MessagePack
     Packer = lambda { |time|
       MessagePack::Timestamp.to_msgpack_ext(time.tv_sec, time.tv_nsec)
     }
+
+    # Non-main Ractors can only read constants whose values are shareable.
+    if defined?(Ractor)
+      Ractor.make_shareable(Unpacker)
+      Ractor.make_shareable(Packer)
+    end
   end
 end

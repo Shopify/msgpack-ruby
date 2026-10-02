@@ -24,6 +24,11 @@
 
 RUBY_FUNC_EXPORTED void Init_msgpack(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    /* Packers, unpackers and buffers only use their own state, so every Ractor can use them. */
+    rb_ext_ractor_safe(true);
+#endif
+
     VALUE mMessagePack = rb_define_module("MessagePack");
 
     MessagePack_Buffer_module_init(mMessagePack);
