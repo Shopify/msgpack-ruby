@@ -704,4 +704,16 @@ describe Buffer do
   ensure
     GC.enable
   end
+
+  it "lets go of the string it was mapped to once that is read" do
+    string = 'x' * 600_000 # above write_reference_threshold, so the buffer refers to it instead of copying it
+    b = MessagePack::Buffer.new
+    b << string
+    mapped = -> { ObjectSpace.reachable_objects_from(b).any? { |o| String === o && o.bytesize == string.bytesize } }
+    expect(mapped.call).to be true
+
+    b.read_all
+    expect(b).to be_empty
+    expect(mapped.call).to be false
+  end
 end

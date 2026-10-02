@@ -69,6 +69,10 @@ static void _msgpack_buffer_chunk_destroy(msgpack_buffer_chunk_t* c)
     c->first = NULL;
     c->last = NULL;
     c->mem = NULL;
+    /* the tail chunk is never freed and msgpack_buffer_mark marks it, so a
+     * drained buffer would keep the string it was mapped to alive until the
+     * next write replaced it. */
+    c->mapped_string = NO_MAPPED_STRING;
 }
 
 void msgpack_buffer_destroy(msgpack_buffer_t* b)

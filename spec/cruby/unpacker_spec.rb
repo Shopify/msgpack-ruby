@@ -67,5 +67,15 @@ describe Unpacker do
       unpacker.skip
     }.should raise_error(MessagePack::MalformedFormatError)
   end
-end
 
+  it 'lets go of the string it was fed once that is read' do
+    payload = MessagePack.pack(Array.new(2000) { 'x' * 100 }) # unpacks into copies, not references to payload
+    fed = -> { ObjectSpace.reachable_objects_from(unpacker).any? { |o| String === o && o.bytesize == payload.bytesize } }
+    unpacker.feed(payload.dup) # feed refers to the string instead of copying it
+    expect(fed.call).to be true
+
+    expect(unpacker.read.size).to eq(2000)
+    expect(unpacker.buffer).to be_empty
+    expect(fed.call).to be false
+  end
+end
