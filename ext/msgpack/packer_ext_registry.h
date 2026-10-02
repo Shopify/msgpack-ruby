@@ -84,7 +84,7 @@ static inline VALUE msgpack_packer_ext_registry_fetch(msgpack_packer_ext_registr
     return Qnil;
 }
 
-static inline VALUE msgpack_packer_ext_registry_lookup(msgpack_packer_ext_registry_t* pkrg,
+static inline VALUE msgpack_packer_ext_registry_lookup(VALUE owner, msgpack_packer_ext_registry_t* pkrg,
         VALUE instance, int* ext_type_result, int* ext_flags_result)
 {
     VALUE type;
@@ -128,6 +128,11 @@ static inline VALUE msgpack_packer_ext_registry_lookup(msgpack_packer_ext_regist
     VALUE superclass = args[1];
     if(superclass != Qnil) {
         VALUE superclass_type = rb_hash_lookup(pkrg->hash, superclass);
+        if(RB_OBJ_FROZEN(pkrg->cache)) {
+            // The cache is shared with a factory that Ractor.make_shareable froze, and with its other packers,
+            // maybe in other Ractors. This packer fills a copy of its own from now on.
+            RB_OBJ_WRITE(owner, &pkrg->cache, NIL_P(pkrg->cache) ? rb_hash_new() : rb_hash_dup(pkrg->cache));
+        }
         rb_hash_aset(pkrg->cache, lookup_class, superclass_type);
         *ext_type_result = FIX2INT(rb_ary_entry(superclass_type, 0));
         *ext_flags_result = FIX2INT(rb_ary_entry(superclass_type, 2));

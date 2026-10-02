@@ -5,6 +5,7 @@ have_func("rb_hash_new_capa", "ruby.h") # Ruby 3.2+
 have_func("rb_proc_call_with_block", "ruby.h") # CRuby (TruffleRuby doesn't have it)
 have_func("rb_gc_mark_locations", "ruby.h") # Missing on TruffleRuby
 have_func("rb_ext_ractor_safe", "ruby.h") # Ruby 3.0+
+have_header("ruby/atomic.h") # Ruby 3.0+
 
 append_cflags([
   "-fvisibility=hidden",

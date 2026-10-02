@@ -55,9 +55,8 @@ msgpack_unpacker_ext_registry_t* msgpack_unpacker_ext_registry_cow(msgpack_unpac
 void msgpack_unpacker_ext_registry_release(msgpack_unpacker_ext_registry_t* ukrg)
 {
     if (ukrg) {
-        if (ukrg->borrow_count) {
-            ukrg->borrow_count--;
-        } else {
+        /* The count was 0 if nothing else borrowed the registry, so the last owner frees it. */
+        if (MSGPACK_BORROW_COUNT_FETCH_DEC(ukrg->borrow_count) == 0) {
             xfree(ukrg);
         }
     }

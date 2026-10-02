@@ -26,8 +26,20 @@
 struct msgpack_unpacker_ext_registry_t;
 typedef struct msgpack_unpacker_ext_registry_t msgpack_unpacker_ext_registry_t;
 
+#ifdef HAVE_RUBY_ATOMIC_H
+#include "ruby/atomic.h"
+/* Frozen factories can be shared between Ractors, which borrow and release their registry concurrently. */
+typedef rb_atomic_t msgpack_borrow_count_t;
+#define MSGPACK_BORROW_COUNT_INC(var) RUBY_ATOMIC_INC(var)
+#define MSGPACK_BORROW_COUNT_FETCH_DEC(var) RUBY_ATOMIC_FETCH_SUB(var, 1)
+#else
+typedef unsigned int msgpack_borrow_count_t;
+#define MSGPACK_BORROW_COUNT_INC(var) ((var)++)
+#define MSGPACK_BORROW_COUNT_FETCH_DEC(var) ((var)--)
+#endif
+
 struct msgpack_unpacker_ext_registry_t {
-    unsigned int borrow_count;
+    msgpack_borrow_count_t borrow_count;
     VALUE array[256];
 };
 
@@ -36,7 +48,7 @@ void msgpack_unpacker_ext_registry_release(msgpack_unpacker_ext_registry_t* ukrg
 static inline void msgpack_unpacker_ext_registry_borrow(msgpack_unpacker_ext_registry_t* src, msgpack_unpacker_ext_registry_t** dst)
 {
     if (src) {
-        src->borrow_count++;
+        MSGPACK_BORROW_COUNT_INC(src->borrow_count);
         *dst = src;
     }
 }

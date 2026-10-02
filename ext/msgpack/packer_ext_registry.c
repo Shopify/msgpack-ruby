@@ -36,6 +36,7 @@ void msgpack_packer_ext_registry_borrow(VALUE owner, msgpack_packer_ext_registry
     if(RTEST(src->hash)) {
         if(rb_obj_frozen_p(src->hash)) {
             // If the type registry is frozen we can safely share it, and share the cache as well.
+            // If Ractor.make_shareable froze the cache too, the packer copies it before its first write.
             RB_OBJ_WRITE(owner, &dst->hash, src->hash);
             RB_OBJ_WRITE(owner, &dst->cache, src->cache);
         } else {
@@ -62,7 +63,8 @@ void msgpack_packer_ext_registry_put(VALUE owner, msgpack_packer_ext_registry_t*
         RB_OBJ_WRITE(owner, &pkrg->hash, rb_hash_new());
     }
 
-    if(NIL_P(pkrg->cache)) {
+    if(NIL_P(pkrg->cache) || RB_OBJ_FROZEN(pkrg->cache)) {
+        // A frozen cache is shared with a factory that was made shareable, so it can't be cleared.
         RB_OBJ_WRITE(owner, &pkrg->cache, rb_hash_new());
     } else {
         /* clear lookup cache not to miss added type */

@@ -108,7 +108,8 @@ bool msgpack_packer_try_write_with_ext_type_lookup(msgpack_packer_t* pk, VALUE v
 {
     int ext_type, ext_flags;
 
-    VALUE proc = msgpack_packer_ext_registry_lookup(&pk->ext_registry, v, &ext_type, &ext_flags);
+    /* to_msgpack_arg is the Packer object, which owns the registry */
+    VALUE proc = msgpack_packer_ext_registry_lookup(pk->to_msgpack_arg, &pk->ext_registry, v, &ext_type, &ext_flags);
 
     if(proc == Qnil) {
         return false;

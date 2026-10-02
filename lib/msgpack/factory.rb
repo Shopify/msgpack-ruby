@@ -2,6 +2,18 @@ module MessagePack
   class Factory
     # see ext for other methods
 
+    # Ractor.make_shareable can't share the procs that Method#to_proc returns, so unpackers given as method names
+    # are lambdas that call the method instead, with this module as their self. Frozen factories that use them can
+    # be shared between Ractors.
+    module MethodUnpacker # :nodoc:
+      def self.new(klass, name)
+        method_name = name.to_sym
+        klass.method(method_name) # raises NameError for unknown methods, like Method#to_proc did
+        lambda { |data| klass.__send__(method_name, data) }
+      end
+    end
+    private_constant :MethodUnpacker
+
     def register_type(type, klass, options = { packer: :to_msgpack_ext, unpacker: :from_msgpack_ext })
       raise FrozenError, "can't modify frozen MessagePack::Factory" if frozen?
 
@@ -26,7 +38,7 @@ module MessagePack
         when nil, Proc
           # all good
         when String, Symbol
-          options[:unpacker] = klass.method(unpacker).to_proc
+          options[:unpacker] = MethodUnpacker.new(klass, unpacker)
         when Method
           options[:unpacker] = unpacker.to_proc
         else

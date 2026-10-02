@@ -247,6 +247,21 @@ pool = factory.pool(5) # The pool size should match the number of threads expect
 pool.load(pool.dump(Point.new(12, 34))) # => #<struct Point x=12, y=34>
 ```
 
+## Ractors
+
+Packers, unpackers and buffers can be used in any Ractor, but each one belongs to the Ractor that created it.
+
+A factory can be shared between Ractors once it's made shareable, which freezes it, so register its types first. `MessagePack.pack` and `MessagePack.unpack` use `MessagePack::DefaultFactory`, so make it shareable before using them outside the main Ractor:
+
+```ruby
+MessagePack::DefaultFactory.register_type(-1, Time, packer: MessagePack::Time::Packer, unpacker: MessagePack::Time::Unpacker)
+Ractor.make_shareable(MessagePack::DefaultFactory)
+
+Ractor.new { MessagePack.unpack(MessagePack.pack(Time.now)) }.value
+```
+
+Every packer and unpacker of a shareable factory has to be shareable too: types registered with method names, like the defaults `packer: :to_msgpack_ext, unpacker: :from_msgpack_ext`, and lambdas that don't use unshareable objects work. `Method` objects and the procs they return can't be shared. Pools can't be shared either, so create one in each Ractor.
+
 ## Buffer API
 
 MessagePack for Ruby provides a buffer API so that you can read or write data by hand, not via Packer or Unpacker API.
